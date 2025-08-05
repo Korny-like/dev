@@ -1,0 +1,1 @@
+Tady se automaticky zobrazí text a obrázky, které zkopírujete.

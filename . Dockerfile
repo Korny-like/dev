@@ -1,0 +1,30 @@
+# Multi-stage build for cloudflared on PowerPC (Turris 1.1)
+FROM golang:1.21-alpine AS builder
+
+# Install git and build tools
+RUN apk add --no-cache git make
+
+# Set working directory
+WORKDIR /src
+
+# Clone cloudflared repository
+RUN git clone https://github.com/cloudflare/cloudflared.git .
+
+# Set cross-compilation environment for PowerPC
+ENV GOOS=linux
+ENV GOARCH=ppc
+ENV CGO_ENABLED=0
+
+# Build cloudflared for PowerPC
+RUN go mod download && \
+    go build -ldflags="-s -w" -o cloudflared-turris ./cmd/cloudflared
+
+    # Create minimal final image
+    FROM scratch AS export
+    COPY --from=builder /src/cloudflared-turris /cloudflared-turris
+
+    # Alternative: Use alpine for testing the binary (won't run on x86 but good for file inspection)
+    FROM alpine:latest AS test
+    RUN apk add --no-cache file
+    COPY --from=builder /src/cloudflared-turris /cloudflared-turris
+    RUN file /cloudflared-turris
